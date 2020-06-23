@@ -424,17 +424,22 @@ extern "C" void device_render (int* pixels,
            ISPCGeometry* geometry = g_ispc_scene->geometries[j];
            if (geometry->type == GROUP) rtcCommitScene(geometry->scene);
         }
+
+        rtcCommitScene (data.scene);
+        
 #else     
         group->run([&]{
             tbb::parallel_for (size_t(0), size_t(g_ispc_scene->numGeometries), size_t(1), [&] (size_t j) {
                 ISPCGeometry* geometry = g_ispc_scene->geometries[j];
                 if (geometry->type == GROUP) rtcCommitScene(geometry->scene);  
               });
+            
+            rtcCommitScene (data.scene);
+      
           });
         group->wait();
 #endif
       }
-      rtcCommitScene (data.scene);
       
       PRINT(invokations);
     }
