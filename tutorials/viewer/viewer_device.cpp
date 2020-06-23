@@ -394,34 +394,45 @@ extern "C" void device_render (int* pixels,
     rtcCommitScene (data.scene);
     size_t numProgressInvokations = invokations;
     PRINT(numProgressInvokations);
+
+    tbb::task_group* group = new tbb::task_group;
       
-    for (size_t i=0; i<100000; i++)
+    for (size_t i=0; i<10000; i++)
     {
       /* just to trigger a rebuild */
       if (g_instancing_mode != ISPC_INSTANCING_NONE) {
-        for (unsigned int i=0; i<g_ispc_scene->numGeometries; i++) {
-          ISPCGeometry* geometry = g_ispc_scene->geometries[i];
+        for (unsigned int j=0; j<g_ispc_scene->numGeometries; j++) {
+          ISPCGeometry* geometry = g_ispc_scene->geometries[j];
           if (geometry->type == GROUP) {
             if (((ISPCGroup*)geometry)->numGeometries) {
-              RTCGeometry geom = rtcGetGeometry(geometry->scene,0);
-              if (geom) rtcCommitGeometry(geom);
+              rtcCommitGeometry(rtcGetGeometry(geometry->scene,0));
             }
           }
         }
       }
-      rtcSetSceneBuildQuality(g_scene,RTC_BUILD_QUALITY_LOW);
-      rtcSetSceneBuildQuality(g_scene,RTC_BUILD_QUALITY_MEDIUM);
       rtcCommitGeometry(rtcGetGeometry(g_scene,0));
       
       PRINT(i);
       invokations.store(0);
       cancel_at_invokation = rand()%numProgressInvokations;
 
-      if (g_instancing_mode != ISPC_INSTANCING_NONE) {
-        for (unsigned int i=0; i<g_ispc_scene->numGeometries; i++) {
-          ISPCGeometry* geometry = g_ispc_scene->geometries[i];
-          if (geometry->type == GROUP) rtcCommitScene(geometry->scene);
+      if (g_instancing_mode != ISPC_INSTANCING_NONE)
+      {
+#if 0
+        for (size_t j=0; j<g_ispc_scene->numGeometries; j++)
+        {
+           ISPCGeometry* geometry = g_ispc_scene->geometries[j];
+           if (geometry->type == GROUP) rtcCommitScene(geometry->scene);
         }
+#else     
+        group->run([&]{
+            tbb::parallel_for (size_t(0), size_t(g_ispc_scene->numGeometries), size_t(1), [&] (size_t j) {
+                ISPCGeometry* geometry = g_ispc_scene->geometries[j];
+                if (geometry->type == GROUP) rtcCommitScene(geometry->scene);  
+              });
+          });
+        group->wait();
+#endif
       }
       rtcCommitScene (data.scene);
       
