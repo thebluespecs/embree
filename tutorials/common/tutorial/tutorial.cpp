@@ -555,6 +555,17 @@ namespace embree
         scene->add(SceneGraph::createTriangleSphere(p,r,numPhi,new OBJMaterial));
       }, "--triangle-sphere p.x p.y p.z r numPhi: adds a sphere at position p with radius r and tesselation numPhi build of triangles.");
 
+    registerOption("triangle-spheres", [this] (Ref<ParseStream> cin, const FileName& path) {
+        const Vec3fa p = cin->getVec3fa();
+        const float  r = cin->getFloat();
+        const size_t numPhi = cin->getInt();
+        const size_t numSpheresX = cin->getInt();
+        const size_t numSpheresY = cin->getInt();
+        for (size_t y=0; y<numSpheresY; y++)
+          for (size_t x=0; x<numSpheresX; x++)
+            scene->add(SceneGraph::createTriangleSphere(p+Vec3fa(x*2.0f*r,0.0,y*2.0f*r),r,numPhi,new OBJMaterial));
+      }, "--triangle-spheres p.x p.y p.z r numPhi numSpheresX numSpheresY: adds a sphere at position p with radius r and tesselation numPhi build of triangles.");
+
     registerOption("quad-sphere", [this] (Ref<ParseStream> cin, const FileName& path) {
         const Vec3fa p = cin->getVec3fa();
         const float  r = cin->getFloat();
