@@ -2,6 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include "../common/tutorial/tutorial_device.h"
+#include <CGAL/Real_timer.h>
+
+CGAL::Real_timer cgaltime;
+
 
 namespace embree {
 
@@ -734,8 +738,8 @@ void sphereFilterFunction(const RTCFilterFunctionNArguments* args)
   const IntersectContext* context = (const IntersectContext*) args->context;
   struct Ray* ray    = (struct Ray*)args->ray;
   //struct RTCHit* hit = (struct RTCHit*)args->hit;
-  const unsigned int N = args->N;
-  assert(N == 1);
+  // const unsigned int N = args->N;
+  assert(args->N == 1);
 
 
   /* avoid crashing when debug visualizations are used */
@@ -953,19 +957,28 @@ extern "C" void device_init (char* cfg)
 
   /* create scene with 4 analytical spheres */
   g_scene0 = rtcNewScene(g_device);
-  g_spheres = createAnalyticalSpheres(g_scene0,4);
+  g_spheres = createAnalyticalSpheres(g_scene0,5);
   g_spheres[0].p = Vec3fa( 0, 0,+1); g_spheres[0].r = 0.5f;
   g_spheres[1].p = Vec3fa(+1, 0, 0); g_spheres[1].r = 0.5f;
   g_spheres[2].p = Vec3fa( 0, 0,-1); g_spheres[2].r = 0.5f;
   g_spheres[3].p = Vec3fa(-1, 0, 0); g_spheres[3].r = 0.5f;
+  g_spheres[4].p = Vec3fa( 0,+1, 0); g_spheres[4].r = 0.5f;
+  // for (int i = 0;i<10;i++){
+  //   for (int j=0;j<10;j++){
+  //     for (int k=0;k<10;k++){
+  //       g_spheres[100*i+10*j+k].p = Vec3fa( i/10, j/10,k/10); g_spheres[100*i+10*j+k].r = 0.5f;
+  //     }
+  //   }
+  // }
+
   rtcCommitScene(g_scene0);
 
   /* create scene with 4 triangulated spheres */
   g_scene1 = rtcNewScene(g_device);
-  createTriangulatedSphere(g_scene1,Vec3fa( 0, 0,+1),0.5f);
-  createTriangulatedSphere(g_scene1,Vec3fa(+1, 0, 0),0.5f);
-  createTriangulatedSphere(g_scene1,Vec3fa( 0, 0,-1),0.5f);
-  createTriangulatedSphere(g_scene1,Vec3fa(-1, 0, 0),0.5f);
+  // createTriangulatedSphere(g_scene1,Vec3fa( 0, 0,+1),0.5f);
+  // createTriangulatedSphere(g_scene1,Vec3fa(+1, 0, 0),0.5f);
+  // createTriangulatedSphere(g_scene1,Vec3fa( 0, 0,-1),0.5f);
+  // createTriangulatedSphere(g_scene1,Vec3fa(-1, 0, 0),0.5f);
   rtcCommitScene(g_scene1);
 
   /* create scene with 2 triangulated and 2 analytical spheres */
@@ -978,12 +991,14 @@ extern "C" void device_init (char* cfg)
 
   /* instantiate geometry */
   g_instance[0] = createInstance(g_scene,g_scene0,0,Vec3fa(-2,-2,-2),Vec3fa(+2,+2,+2));
-  g_instance[1] = createInstance(g_scene,g_scene1,1,Vec3fa(-2,-2,-2),Vec3fa(+2,+2,+2));
-  g_instance[2] = createInstance(g_scene,g_scene2,2,Vec3fa(-2,-2,-2),Vec3fa(+2,+2,+2));
-  g_instance[3] = createInstance(g_scene,g_scene2,3,Vec3fa(-2,-2,-2),Vec3fa(+2,+2,+2));
+  g_instance[1] = createInstance(g_scene,g_scene0,1,Vec3fa(-2,-2,-2),Vec3fa(+2,+2,+2));
+  g_instance[2] = createInstance(g_scene,g_scene0,2,Vec3fa(-2,-2,-2),Vec3fa(+2,+2,+2));
+  g_instance[3] = createInstance(g_scene,g_scene0,3,Vec3fa(-2,-2,-2),Vec3fa(+2,+2,+2));
   createGroundPlane(g_scene);
+  cgaltime.start();
   rtcCommitScene(g_scene);
-
+  cgaltime.stop();
+  std::cout<<"Time: "<<cgaltime.time()<<std::endl;
   /* set all colors */
   colors[0][0] = Vec3fa(0.25f, 0.00f, 0.00f);
   colors[0][1] = Vec3fa(0.50f, 0.00f, 0.00f);
